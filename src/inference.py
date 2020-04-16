@@ -46,9 +46,9 @@ def main(args):
 
     #Expect Error if either validation size or train size is 1
 
-    if args.dataset == "Equator" or args.dataset == "Poles":
+    if args.dataset == "Equator" or args.dataset == "Poles" or args.dataset == "other" :
         print("Commencing inference for dataset {}".format(args.dataset))
-        dataset = DAVIS_frames(
+        dataset = TEST(
             root_path = args.src,
             clip_length = CLIP_LENGTH,
             resolution = frame_size)
@@ -71,9 +71,9 @@ def main(args):
 
     if "EMA" in args.pt_model:
         if "poles" in args.pt_model:
-            model = SalEMA.poles(alpha=args.alpha, ema_loc=EMA_LOC)
+            model = SalEMA.Poles_EMA(alpha=args.alpha, ema_loc=EMA_LOC)
         elif "equator" in args.pt_model:
-            model = SalEMA.equator(alpha=args.alpha, ema_loc=EMA_LOC)
+            model = SalEMA.Equator_EAM(alpha=args.alpha, ema_loc=EMA_LOC)
         
         load_model(args.pt_model, model)
         print("Pre-trained model {} loaded succesfully".format(args.pt_model))

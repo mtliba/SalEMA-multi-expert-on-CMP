@@ -20,14 +20,14 @@ class Upsample(nn.Module):
         x = self.interp(x, scale_factor=self.scale_factor, mode=self.mode)
         return x
 
-class Poles(nn.Module):
+class Poles_EMA(nn.Module):
     """
     In this model we take same architecter of SalEMA and traind it on poles faces
     In this model, we pick a Convolutional layer from the bottleneck and apply EMA as a simple temporal regularizer.
     The smaller the alpha, the less each newly added frame will impact the outcome. This way the temporal information becomes most relevant.
     """
     def  __init__(self, alpha, ema_loc, use_gpu=True):
-        super(Poles,self).__init__()
+        super(Poles_EMA,self).__init__()
         self.use_gpu = use_gpu
         if alpha == None:
             self.alpha = nn.Parameter(torch.Tensor([0.25]))
@@ -109,14 +109,14 @@ class Poles(nn.Module):
             x = self.salgan[self.ema_loc+1:](x)
 
         return current_state, x #x is a saliency map at this point
-class Equator(nn.Module):
+class Equator_EMA(nn.Module):
     """
     In this model we take same architecter of SalEMA and traind it on Euator faces
     In this model, we pick a Convolutional layer from the bottleneck and apply EMA as a simple temporal regularizer.
     The smaller the alpha, the less each newly added frame will impact the outcome. This way the temporal information becomes most relevant.
     """
     def  __init__(self, alpha, ema_loc, use_gpu=True):
-        super(Equator,self).__init__()
+        super(Equator_EMA,self).__init__()
         self.use_gpu = use_gpu
         if alpha == None:
             self.alpha = nn.Parameter(torch.Tensor([0.25]))

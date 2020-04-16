@@ -18,41 +18,21 @@ from data_loader import DHF1K_frames, Hollywood_frames
 """
 Be sure to check the name of args.new_model before running
 """
-frame_size = (192, 256) # original shape is (360, 640, 3)
-#learning_rate = 0.0000001 # Added another 0 for hollywood
+frame_size = (256, 256) # original shape is (360, 640, 3)
+
 decay_rate = 0.1
 momentum = 0.9
 weight_decay = 1e-4
-#epochs = 7+1 #+3+2
+
 plot_every = 1
 clip_length = 10
 
-#temporal = True
-#RESIDUAL = False
-#args.dropout = True
-SALGAN_WEIGHTS = 'model_weights/salgan_salicon.pt' #JuanJo's weights
-#CONV_LSTM_WEIGHTS = './SalConvLSTM.pt' #These are not relevant in this problem after all, SalGAN was trained on a range of 0-255, the ConvLSTM was trained on a 0-1 range so they are incompatible.
 LEARN_ALPHA_ONLY = False
-#EMA_LOC_2 = 54
-#PROCESS = 'parallel'
-# Parameters
+
 params = {'batch_size': 1, # number of videos / batch, I need to implement padding if I want to do more than 1, but with DataParallel it's quite messy
           'num_workers': 4,
           'pin_memory': True}
 
-#args.new_model = 'SalEMA{}&{}.pt'.format(EMA_LOC, EMA_LOC_2)
-#args.pt_model = 'SalEMA{}.pt'.format(EMA_LOC)
-#args.pt_model = 'rawSalEMA{}D.pt'.format(EMA_LOC)
-#args.pt_model = 'SalEMA{}D_H.pt'.format(EMA_LOC)
-#args.pt_model = 'SalGANmid_H.pt'
-#args.pt_model = None
-#args.pt_model = 'SalEMA{}Afinal.pt'.format(EMA_LOC)
-#args.new_model = 'SalCLSTM30.pt'
-
-# dtype = torch.FloatTensor
-# if PROCESS == 'gpu' or PROCESS == 'parallel':
-#     assert(torch.cuda.is_available())
-#     dtype = torch.cuda.FloatTensor
 
 def main(args, params = params):
 
@@ -151,7 +131,7 @@ def main(args, params = params):
     checkpoint = load_weights(model, args.pt_model)
     model.load_state_dict(checkpoint, strict=False)
     start_epoch = torch.load(args.pt_model, map_location='cpu')['epoch']
-    #optimizer.load_state_dict(torch.load(args.pt_model, map_location='cpu')['optimizer'])
+   
 
     print("Model loaded, commencing training from epoch {}".format(start_epoch))
 
@@ -165,10 +145,9 @@ def main(args, params = params):
         elif args.use_gpu == 'gpu':
             model = model.cuda()
         dtype = torch.cuda.FloatTensor
-        cudnn.benchmark = True #https://discuss.pytorch.org/t/what-does-torch-backends-cudnn-benchmark-do/5936
+        cudnn.benchmark = True 
         criterion = criterion.cuda()
-    # =================================================
-    # ================== Training =====================
+
 
 
     train_losses = []
@@ -177,8 +156,7 @@ def main(args, params = params):
     print("Training started at : {}".format(starting_time))
 
     n_iter = 0
-    #if "EMA" in args.new_model:
-    #    print("Alpha value started at: {}".format(model.alpha))
+
 
     for epoch in range(start_epoch, args.epochs+1):
 
@@ -211,13 +189,6 @@ def main(args, params = params):
             else:
                 pass
 
-            """
-            else:
-
-                print("Training on whole set")
-                train_loss, n_iter, optimizer = train(whole_loader, model, criterion, optimizer, epoch, n_iter)
-                print("Epoch {}/{} done with train loss {}".format(epoch, args.epochs, train_loss))
-            """
 
         except RuntimeError:
             print("A memory error was encountered. Further training aborted.")
@@ -225,10 +196,6 @@ def main(args, params = params):
             break
 
     print("Training of {} started at {} and finished at : {} \n Now saving..".format(args.new_model, starting_time, datetime.datetime.now().replace(microsecond=0)))
-    #if "EMA" in args.new_model:
-    #    print("Alpha value tuned to: {}".format(model.alpha))
-    # ===================== #
-    # ======  Saving ====== #
 
     # If I try saving in regular intervals I have to move the model to CPU and back to GPU.
     torch.save({
@@ -237,16 +204,7 @@ def main(args, params = params):
         'optimizer' : optimizer.state_dict()
         }, args.new_model+".pt")
 
-    """
-    hyperparameters = {
-        'momentum' : momentum,
-        'weight_decay' : weight_decay,
-        'args.lr' : learning_rate,
-        'decay_rate' : decay_rate,
-        'args.epochs' : args.epochs,
-        'batch_size' : batch_size
-    }
-    """
+
 
     if args.val_perc > 0:
         to_plot = {
@@ -257,7 +215,6 @@ def main(args, params = params):
         with open('to_plot.pkl', 'wb') as handle:
             pickle.dump(to_plot, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-# ===================
 
 mean = lambda x : sum(x)/len(x)
 
@@ -296,11 +253,7 @@ def train(train_loader, model, criterion, optimizer, epoch, n_iter, use_gpu, dou
     video_losses = []
     print("Now commencing epoch {}".format(epoch))
     for i, video in enumerate(train_loader):
-        """
-        if i == 956 or i == 957:
-            #some weird bug happens there
-            continue
-        """
+
         #print(type(video))
         accumulated_losses = []
         start = datetime.datetime.now().replace(microsecond=0)
@@ -310,19 +263,13 @@ def train(train_loader, model, criterion, optimizer, epoch, n_iter, use_gpu, dou
 
             n_iter+=j
 
-            # Reset Gradients
             optimizer.zero_grad()
-
-            # Squeeze out the video dimension
-            # [video_batch, clip_length, channels, height, width]
-            # After transpose:
-            # [clip_length, video_batch, channels, height, width]
 
             clip = Variable(clip.type(dtype).transpose(0,1))
             gtruths = Variable(gtruths.type(dtype).transpose(0,1))
 
             if temporal :
-                #print(clip.size()) #works! torch.Size([5, 1, 1, 360, 640])
+
                 loss = 0
                 for idx in range(clip.size()[0]):
                     #print(clip[idx].size())
@@ -366,8 +313,7 @@ def train(train_loader, model, criterion, optimizer, epoch, n_iter, use_gpu, dou
             # Visualize some of the data
             if i%100==0 and j == 5:
 
-                #writer.add_image('Frame', clip[idx], n_iter)
-                #writer.add_image('Gtruth', gtruths[idx], n_iter)
+
 
                 post_process_saliency_map = (saliency_map-torch.min(saliency_map))/(torch.max(saliency_map)-torch.min(saliency_map))
                 utils.save_image(post_process_saliency_map, "./log/smap{}_epoch{}.png".format(i, epoch))
@@ -380,7 +326,6 @@ def train(train_loader, model, criterion, optimizer, epoch, n_iter, use_gpu, dou
                     print(post_process_saliency_map.max())
                     print(post_process_saliency_map.min())
                     utils.save_image(gtruths[idx], "./log/gt{}.png".format(i))
-                #writer.add_image('Prediction', prediction, n_iter)
 
 
         end = datetime.datetime.now().replace(microsecond=0)
@@ -407,7 +352,6 @@ def validate(val_loader, model, criterion, epoch, temporal, dtype):
 
             loss = 0
             for idx in range(clip.size()[0]):
-                #print(clip[idx].size()) needs unsqueeze
                 # Compute output
                 if temporal:
                     state, saliency_map = model.forward(clip[idx], state)
